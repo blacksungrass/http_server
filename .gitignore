@@ -1,3 +1,8 @@
+/biild
+/cmake*
+/.idea
+
+
 # Prerequisites
 *.d
 
