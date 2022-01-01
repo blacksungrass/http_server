@@ -18,3 +18,7 @@ void file_response::set_file(const std::string &file_path) {
     }
 
 }
+
+std::string file_response::to_string() const {
+    return response::to_string();
+}

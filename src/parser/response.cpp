@@ -21,14 +21,14 @@ void response::set_status_string(const std::string &s) {
 
 void response::add_header(const std::string &key, const std::string &value) {
     string tmp(key);
-    to_lower(key);
-    m_headers[key] = value;
+    tolower(tmp);
+    m_headers[tmp] = value;
 }
 
 void response::append_content(const std::string &s) {
     m_content.append(s);
     auto it = m_headers.find("content-length");
-    string val = to_string(m_content.size())
+    string val = std::to_string(m_content.size());
     if(it==m_headers.end()){
         m_headers["content-length"] = val;
     }

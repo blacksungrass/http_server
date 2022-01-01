@@ -10,7 +10,7 @@ using namespace std;
 bool parser::parse(const char *data, size_t len) {
     if(m_failure)
         return false;
-    m_buffer.append(data,len);
+    m_buffer.append(data,len);//todo 加入对buffer长度的限制
     const char* p = m_buffer.c_str();
     len = m_buffer.size();
     while(true){

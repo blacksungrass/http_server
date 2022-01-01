@@ -13,8 +13,8 @@ private:
     std::size_t m_file_length;
 public:
     file_response();
-    void set_file(const string& file_path);
-    virtual string& to_string() const override;
+    void set_file(const std::string& file_path);
+    std::string to_string() const override;
 };
 
 

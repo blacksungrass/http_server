@@ -3,6 +3,7 @@
 //
 
 #include "util.h"
+#include <sys/epoll.h>
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -26,3 +27,25 @@ void make_nonblocking(int fd){
     fcntl(fd, F_SETFL, new_option);
 }
 
+bool add_to_epoll(int fd,int epoll_fd,uint32_t event){
+    epoll_event e;
+    e.data.fd = fd;
+    e.events = event;
+    int ret = epoll_ctl(epoll_fd,EPOLL_CTL_ADD,fd,&e);
+    return ret==0;
+}
+
+bool modified_epoll(int fd,int epoll_fd,uint32_t event){
+    epoll_event e;
+    e.data.fd = fd;
+    e.events = event;
+    int ret = epoll_ctl(epoll_fd,EPOLL_CTL_MOD,fd,&e);
+    return ret==0;
+}
+
+bool del_from_epoll(int fd,int epoll_fd){
+    epoll_event e;
+    e.data.fd = fd;
+    int ret = epoll_ctl(epoll_fd,EPOLL_CTL_DEL,fd,&e);
+    return ret==0;
+}

@@ -6,11 +6,13 @@
 #define TEST_CONNECTION_H
 
 #include "../parser/parser.h"
-#include "../thread_pool/thread_pool.h"
+#include "http_server.h"
 
 #include <string>
 #include <arpa/inet.h>
-#icclude <sys/socket.h>
+#include <sys/socket.h>
+
+enum class TriggerMode;
 
 class connection {
 private:
@@ -18,12 +20,17 @@ private:
     u_short m_client_port;
     sockaddr_in m_client_ip;
     int m_sock_fd;
-    thread_pool* m_pool;
-
+    int m_epoll_fd;
+    parser m_parser;
+    application& m_app;
+    TriggerMode m_mode;
+    std::queue<response> m_response_queue;
+    bool send_response(const response& response);
 public:
-    connection(const sockaddr_in& client_ip,int sock_fd);
+    connection(const sockaddr_in& client_ip,int sock_fd,int epoll_fd, application& app,TriggerMode mode);
     void handle_read();
     void handle_write();
+    void handle_close();
 };
 
 
