@@ -8,11 +8,15 @@
 #include <sstream>
 #include <fcntl.h>
 #include <exception>
-#include <stdarg.h>
+#include <cstdarg>
+#include <iostream>
+#include <cstring>
 using namespace std;
 
 const size_t logger::MAX_RECORD_PER_FILE = 20000;
 const size_t logger::MAX_QUEUE_SIZE = 1000;
+
+logger global_default_logger("server","/tmp/http_server/");
 
 static string generate_filename(const string& log_name,pid_t pid,timeval time,int log_idx){
     stringstream ss;
@@ -51,9 +55,9 @@ void logger::writer_thread() {
     }
 }
 
-logger::logger(std::string log_name, std::string log_dir) {
-    m_log_name = move(log_name);
-    m_log_dir = move(log_dir);
+logger::logger(const std::string& log_name, const std::string& log_dir) {
+    m_log_name = log_name;
+    m_log_dir = log_dir;
     m_log_cnt = 0;
     m_log_idx = 0;
     m_exited = false;
@@ -62,6 +66,7 @@ logger::logger(std::string log_name, std::string log_dir) {
     m_log_file_name = generate_filename(m_log_name,m_pid,m_create_time,m_log_idx);
     m_log_file_fd = open((m_log_dir+m_log_file_name).c_str(),O_WRONLY|O_CREAT|O_APPEND,0600);
     if(m_log_file_fd<0){
+        cerr<<"open log file failed, errno="<<errno<<"("<<strerror(errno)<<")"<<endl;
         throw exception();
     }
     m_thread = thread(&logger::writer_thread,this);

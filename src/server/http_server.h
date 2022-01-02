@@ -40,7 +40,7 @@ public:
     http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir);
     http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir,unsigned int thread_cnt);
 
-    [[noreturn]] bool start(application& app);
+    bool start(application& app);
 };
 
 

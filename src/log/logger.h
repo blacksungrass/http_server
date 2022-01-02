@@ -20,7 +20,6 @@ private:
     const static std::size_t MAX_QUEUE_SIZE;
     const static std::size_t MAX_RECORD_PER_FILE;
     std::queue<std::string> m_queue;
-    std::thread m_writer_thread;
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::string m_log_dir;
@@ -35,7 +34,7 @@ private:
     int m_log_idx;
     bool m_exited;
 public:
-    logger(std::string log_name,std::string log_dir);
+    logger(const std::string& log_name,const std::string& log_dir);
     logger(const logger&) = delete;
     logger& operator=(const logger&) = delete;
     logger(logger&&) = delete;
@@ -54,6 +53,13 @@ public:
 #define LOG_ERROR(logger_name, format, ...)     logger_name.add_log(log_level::ERROR,format,##__VA_ARGS__);
 #define LOG_DEADLY(logger_name, format, ...)    logger_name.add_log(log_level::DEADLY,format,##__VA_ARGS__);
 
+extern logger global_default_logger;
 
+#define TRACE(format, ...)     global_default_logger.add_log(log_level::TRACE,format,##__VA_ARGS__);
+#define DEBUG(format, ...)     global_default_logger.add_log(log_level::DEBUG,format,##__VA_ARGS__);
+#define INFO(format, ...)      global_default_logger.add_log(log_level::INFO,format,##__VA_ARGS__);
+#define WARNING(format, ...)   global_default_logger.add_log(log_level::WARNING,format,##__VA_ARGS__);
+#define ERROR(format, ...)     global_default_logger.add_log(log_level::ERROR,format,##__VA_ARGS__);
+#define DEADLY(format, ...)    global_default_logger.add_log(log_level::DEADLY,format,##__VA_ARGS__);
 
 #endif //TEST_LOGGER_H

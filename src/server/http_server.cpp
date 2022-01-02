@@ -33,12 +33,15 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
     m_listen_ip.sin_family = AF_INET;
     m_listen_mode = TriggerMode::ET;
     m_conn_mode = TriggerMode::ET;
+    INFO("create server at %s:%d",m_listen_address.c_str(),m_listen_port);
 }
 
-[[noreturn]] bool http_server::start(application& app) {
+bool http_server::start(application& app) {
     m_listen_fd = socket(AF_INET,SOCK_STREAM,0);
     if(m_listen_fd<0)
         return false;
+    int one = 1;
+    setsockopt(m_listen_fd,SOL_SOCKET,SO_REUSEADDR,&one,sizeof(one));
     make_nonblocking(m_listen_fd);
     socklen_t len = sizeof(m_listen_ip);
     int ret = bind(m_listen_fd,(sockaddr*)&m_listen_ip,len);
@@ -51,6 +54,7 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
         perror("listen failed");
         return false;
     }
+    INFO("%s","server start listening");
     m_epoll_fd = epoll_create(5);
     if(m_epoll_fd<0)
         return false;
@@ -62,21 +66,28 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
         return false;
     }
     epoll_event event_vector[http_server::MAX_EPOLL_EVENTS_CNT];
-    while(true){
+    bool exit = false;
+    while(!exit){
+        TRACE("%s","start epoll_wait");
         int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,-1);
+        TRACE("epoll_wait got %d events",num);
         for(int i=0;i<num;++i){
             epoll_event ev = event_vector[i];
             if(ev.data.fd==m_listen_fd){
+                TRACE("%s","epoll_wait got events on listen_fd");
                 bool error_flag = false;
                 while(true){
                     sockaddr_in client_ip;
                     socklen_t client_ip_len = sizeof(sockaddr_in);
                     int client_fd = accept(m_listen_fd,(sockaddr*)&client_ip,&client_ip_len);
+                    TRACE("accept return client_fd=%d",client_fd);
                     if(client_fd<0){
                         if(errno==EWOULDBLOCK||errno==EAGAIN){
+                            TRACE("errno=%d(%s)",errno,strerror(errno));
                             break;
                         }
                         else{
+                            TRACE("errno=%d(%s)",errno,strerror(errno));
                             error_flag = true;
                             break;
                         }
@@ -85,6 +96,7 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
 
                     auto it = m_connections.find(client_fd);
                     if(it!=m_connections.end()){
+                        INFO("erase a old connection at client_fd=%d",client_fd);
                         m_connections.erase(it);
                     }
                     m_connections.emplace(piecewise_construct,forward_as_tuple(client_fd),\
@@ -118,6 +130,7 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
                 }
             }
         }
+
     }
 
 }

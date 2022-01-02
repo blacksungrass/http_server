@@ -4,6 +4,7 @@
 
 #include "connection.h"
 #include "../util/util.h"
+#include "../log/logger.h"
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -17,6 +18,8 @@ connection::connection(const sockaddr_in &client_ip, int sock_fd, int epoll_fd,a
     m_app(app),
     m_mode(mode){
 
+    INFO("create a new connection from %s:%d at fd=%d",m_client_address.c_str(),m_client_port,m_sock_fd);
+
     make_nonblocking(m_sock_fd);
     int event = EPOLLIN|EPOLLONESHOT|EPOLLHUP;
     if(m_mode==TriggerMode::ET){
@@ -26,6 +29,7 @@ connection::connection(const sockaddr_in &client_ip, int sock_fd, int epoll_fd,a
 }
 
 void connection::handle_read() {
+    TRACE("connection %s:%d at fd=%d handle_read",m_client_address.c_str(),m_client_port,m_sock_fd);
     static const size_t BUF_SIZE = 1024;
     char buffer[BUF_SIZE];
     while(true){
@@ -34,6 +38,8 @@ void connection::handle_read() {
             m_parser.parse(buffer,ret);
         }
         else if(ret==0){
+            ERROR("connection %s:%d fd=%d recv 0, client close connection",m_client_address.c_str(),m_client_port,\
+            m_sock_fd);
             handle_close();
             //close connection
             return;
@@ -43,6 +49,8 @@ void connection::handle_read() {
                 break;
             }
             else{
+                ERROR("connection %s:%d fd=%d recv failed, errno=%d(%s)",m_client_address.c_str(),m_client_port,\
+                m_sock_fd,errno,strerror(errno));
                 //log and close connection;
                 handle_close();
                 return;
@@ -57,6 +65,8 @@ void connection::handle_read() {
         vector<request> requests = m_parser.get_results();
         vector<response> responses;
         for(const auto& req:requests){
+            TRACE("connection %s:%d fd=%d recv req:\r\n%s",m_client_address.c_str(),m_client_port,m_sock_fd,\
+            req.to_string().c_str());
             m_response_queue.emplace(m_app.handle_request(req));
         }
         event |= EPOLLOUT;
@@ -67,10 +77,12 @@ void connection::handle_read() {
 bool connection::send_response(const response& resp){
     string s = resp.to_string();
     int ret = send(m_sock_fd,s.c_str(),s.size(),0);
+    TRACE("connection %s:%d fd=%d send resp:\r\n%s",m_client_address.c_str(),m_client_port,m_sock_fd,s.c_str());
     return ret==s.size();
 }
 
 void connection::handle_write() {
+    TRACE("connection %s:%d at fd=%d handle_write",m_client_address.c_str(),m_client_port,m_sock_fd);
     while(!m_response_queue.empty()){
         const response& resp = m_response_queue.front();
         bool ret = send_response(resp);
@@ -89,6 +101,7 @@ void connection::handle_write() {
 }
 
 void connection::handle_close(){
+    TRACE("connection %s:%d at fd=%d handle_close",m_client_address.c_str(),m_client_port,m_sock_fd);
     del_from_epoll(m_sock_fd,m_epoll_fd);
     //swap(m_parser,parser());//清空parser，减少内存占用
 }
