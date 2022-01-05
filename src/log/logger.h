@@ -43,8 +43,16 @@ public:
     bool add_log(log_level level,const char* fmt,...);
     ~logger();
 };
+#define NOLOG
 
-
+#ifdef NOLOG
+#define TRACE(format, ...)
+#define DEBUG(format, ...)
+#define INFO(format, ...)
+#define WARNING(format, ...)
+#define ERROR(format, ...)
+#define DEADLY(format, ...)
+#else
 
 #define LOG_TRACE(logger_name, format, ...)     logger_name.add_log(log_level::TRACE,format,##__VA_ARGS__);
 #define LOG_DEBUG(logger_name, format, ...)     logger_name.add_log(log_level::DEBUG,format,##__VA_ARGS__);
@@ -61,5 +69,7 @@ extern logger global_default_logger;
 #define WARNING(format, ...)   global_default_logger.add_log(log_level::WARNING,format,##__VA_ARGS__);
 #define ERROR(format, ...)     global_default_logger.add_log(log_level::ERROR,format,##__VA_ARGS__);
 #define DEADLY(format, ...)    global_default_logger.add_log(log_level::DEADLY,format,##__VA_ARGS__);
+
+#endif
 
 #endif //TEST_LOGGER_H
