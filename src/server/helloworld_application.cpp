@@ -15,5 +15,6 @@ response helloworld_application::handle_request(const request& req){
     resp.add_header("content-type","text/html");
     resp.add_header("connection","keep-alive");
     resp.append_content("<html><h1>Hello world!</h1></html>");
+    resp.set_close_connection(true);
     return resp;
 }

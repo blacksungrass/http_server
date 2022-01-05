@@ -47,3 +47,11 @@ string response::to_string() const {
     ss<<m_content;
     return ss.str();
 }
+
+bool response::close_connection() const{
+    return m_close_connection;
+}
+
+void response::set_close_connection(bool close){
+    m_close_connection = close;
+}

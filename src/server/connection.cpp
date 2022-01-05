@@ -6,6 +6,8 @@
 #include "../util/util.h"
 #include "../log/logger.h"
 #include <bits/stdc++.h>
+#include <unistd.h>
+
 using namespace std;
 
 
@@ -86,7 +88,7 @@ void connection::handle_write() {
     while(!m_response_queue.empty()){
         const response& resp = m_response_queue.front();
         bool ret = send_response(resp);
-        if(!ret){
+        if(!ret||resp.close_connection()){
             //log error and close connection
             handle_close();
             return;
@@ -103,5 +105,7 @@ void connection::handle_write() {
 void connection::handle_close(){
     TRACE("connection %s:%d at fd=%d handle_close",m_client_address.c_str(),m_client_port,m_sock_fd);
     del_from_epoll(m_sock_fd,m_epoll_fd);
+    close(m_sock_fd);
+    //m_container.erase(m_sock_fd);//析构掉自己
     //swap(m_parser,parser());//清空parser，减少内存占用
 }

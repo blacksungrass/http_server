@@ -15,6 +15,7 @@ private:
     std::string m_status_string;
     std::map<std::string,std::string> m_headers;
     std::string m_content;
+    bool m_close_connection = false;
 public:
     response() = default;
     void set_version(const std::string& version);
@@ -23,6 +24,8 @@ public:
     void add_header(const std::string& key,const std::string& value);
     void append_content(const std::string& s);
     virtual std::string to_string() const;
+    bool close_connection() const;
+    void set_close_connection(bool);
 };
 
 
