@@ -8,7 +8,7 @@ using namespace std;
 
 response helloworld_application::handle_request(const request& req){
     response resp;
-    resp.set_version("http/1.1");
+    resp.set_version("HTTP/1.1");
     resp.set_status_code(200);
     resp.set_status_string("OK");
     //resp.add_header("server","hello world server");
