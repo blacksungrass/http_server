@@ -64,10 +64,23 @@ target_link_libraries(
         pthread
 )
 
+add_executable(
+        test_timer
+        timer/test_timer.cpp
+        ../src/thread_pool/thread_pool.cpp
+        ../src/timer/timer.cpp
+)
+target_link_libraries(
+        test_timer
+        pthread
+        gtest_main
+)
+
 
 include(GoogleTest)
 #gtest_discover_tests(test_gtest)
 #gtest_discover_tests(test_request)
 #gtest_discover_tests(test_thread_pool)
-gtest_discover_tests(test_parser)
-gtest_discover_tests(test_logger)
+#gtest_discover_tests(test_parser)
+#gtest_discover_tests(test_logger)
+gtest_discover_tests(test_timer)
