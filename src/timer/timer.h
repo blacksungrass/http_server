@@ -7,20 +7,26 @@
 
 #include "../thread_pool/thread_pool.h"
 #include <sys/time.h>
+#include <map>
 
+class timer_event;
 
 class timer {
     using event = std::pair<timeval,std::function<void()>>;
 private:
     thread_pool& m_thread_pool;
     std::vector<event> m_events;
-    //const long int m_max_tick_time = 20;//milliseconds！！！！
+    timer_event* m_head;
+    int64_t m_id;
+    std::mutex m_mutex;
+    std::map<int64_t,timer_event*> m_record;
 public:
     explicit timer(thread_pool& pool);
-    void add_timer(const std::chrono::milliseconds& d,std::function<void()>&& func);
-    void add_timer(const std::chrono::microseconds& d,std::function<void()>&& func);
-    void add_timer(const std::chrono::seconds& d,std::function<void()>&& func);
+    int64_t add_timer(const std::chrono::milliseconds& d,std::function<void()>&& func);
+    int64_t add_timer(const std::chrono::microseconds& d,std::function<void()>&& func);
+    int64_t add_timer(const std::chrono::seconds& d,std::function<void()>&& func);
     std::chrono::microseconds tick();
+    bool del_timer(int64_t id);
 };
 
 
