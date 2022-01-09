@@ -10,13 +10,14 @@ using namespace std;
 
 const int thread_pool::MAX_QUEUE_LENGTH = 200;
 
-thread_pool::thread_pool(): thread_pool(thread::hardware_concurrency()){
+thread_pool::thread_pool():thread_pool(thread::hardware_concurrency()){
 
 }
 
-thread_pool::thread_pool(unsigned int num_workers) {
-    m_num_workers = num_workers;
-    if(num_workers==0){
+thread_pool::thread_pool(unsigned int num_workers)
+:exited(false),
+ m_num_workers(num_workers){
+    if(m_num_workers==0){
         throw invalid_argument("线程池的线程数应大于0");
     }
     for(int i=0;i<m_num_workers;++i){
@@ -47,7 +48,6 @@ void thread_pool::run() {
         catch (...){
             //todo write log
         }
-
     }
 }
 
