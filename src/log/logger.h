@@ -43,7 +43,7 @@ public:
     bool add_log(log_level level,const char* fmt,...);
     ~logger();
 };
-#define NOLOG
+//#define NOLOG
 
 #ifdef NOLOG
 #define TRACE(format, ...)

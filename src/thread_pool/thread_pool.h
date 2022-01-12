@@ -27,7 +27,7 @@ private:
     std::queue<std::function<void()>> m_task_queue;//todo 这里似乎只可以放放回置为void的task，是否可以改进为可以放任意的返回类型的函数
 public:
     thread_pool();
-    thread_pool(unsigned int num_workers);
+    explicit thread_pool(unsigned int num_workers);
     thread_pool(const thread_pool&) = delete;
     thread_pool& operator = (const thread_pool&) = delete;
     thread_pool(thread_pool&& o) = delete;
