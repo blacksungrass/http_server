@@ -63,7 +63,6 @@ bool thread_pool::add_task(function<void()> &&f) {
 thread_pool::~thread_pool(){
     {
         lock_guard lock(m_mutex);
-        cout<<"thread pool deconstruct"<<endl;
         while(!m_task_queue.empty())
             m_task_queue.pop();
         exited = true;

@@ -4,6 +4,7 @@
 
 #include "http_server.h"
 #include "../util/util.h"
+#include <signal.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <arpa/inet.h>
@@ -34,6 +35,12 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
     m_listen_mode = TriggerMode::ET;
     m_conn_mode = TriggerMode::ET;
     INFO("create server at %s:%d",m_listen_address.c_str(),m_listen_port);
+}
+
+bool exit_server = false;
+
+void handle_signal(int signum){
+    exit_server = true;
 }
 
 bool http_server::start(application& app) {
@@ -67,9 +74,11 @@ bool http_server::start(application& app) {
     }
     epoll_event event_vector[http_server::MAX_EPOLL_EVENTS_CNT];
     bool exit = false;
-    while(!exit){
+    auto old_handler = signal(SIGINT,handle_signal);
+
+    while(!exit_server){
         TRACE("%s","start epoll_wait");
-        int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,-1);
+        int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,100);
         TRACE("epoll_wait got %d events",num);
         for(int i=0;i<num;++i){
             epoll_event ev = event_vector[i];
@@ -77,7 +86,7 @@ bool http_server::start(application& app) {
                 TRACE("%s","epoll_wait got events on listen_fd");
                 bool error_flag = false;
                 while(true){
-                    sockaddr_in client_ip;
+                    sockaddr_in client_ip{};
                     socklen_t client_ip_len = sizeof(sockaddr_in);
                     int client_fd = accept(m_listen_fd,(sockaddr*)&client_ip,&client_ip_len);
                     TRACE("accept return client_fd=%d",client_fd);
@@ -133,4 +142,7 @@ bool http_server::start(application& app) {
 
     }
 
+    printf("%s\n","server exit gracefully");
+    signal(SIGINT,old_handler);
+    return true;
 }

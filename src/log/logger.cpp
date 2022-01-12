@@ -30,7 +30,7 @@ void logger::writer_thread() {
         if(m_exited)
             return;
         m_cv.wait(lock,[this]()->bool{
-           return !this->m_queue.empty();
+           return !this->m_queue.empty()||m_exited;
         });
         if(m_exited)
             return;
@@ -119,9 +119,7 @@ bool logger::add_log(log_level level, const char *fmt, ...) {
 logger::~logger() {
     unique_lock lock(m_mutex);
     m_exited = true;
-    if(m_queue.empty()){
-        m_queue.emplace();
-    }
+    m_cv.notify_all();
     lock.unlock();
     m_thread.join();
 }
