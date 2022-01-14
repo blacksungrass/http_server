@@ -7,40 +7,80 @@
 #include "../log/logger.h"
 #include <bits/stdc++.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 
 using namespace std;
 
+/*
+ * 目前的问题是，connection这个对象的生命周期管理
+ * 目前的形式是，connection什么时候析构由对象自己决定
+ * 但是在目前的线程池框架下，可能会出现的问题是，线程池种的一个线程执行connection析构了，而线程池中的另一个线程开始执行connection的成员函数
+ * 目前之所以没出问题，是因为EPOLLONESHOT保证了同一时刻在线程池种对于同一个connection只执行一个成员函数
+ * 但是如果加入timer，就失去了EPOLLONESHOT的保证，也就可能会出现空指针错误
+ * 看来只能使用智能指针试试看了
+ */
 
-connection::connection(const sockaddr_in &client_ip, int sock_fd, int epoll_fd,application& app,TriggerMode mode)
+void connection::check_inactive(shared_ptr<connection> self){
+    TRACE("doing check_inactive at connection %s:%d at fd=%d",self->m_client_address.c_str(),
+          self->m_client_port,self->m_sock_fd);
+    const int max_inactive_time = 3;//seconds
+    timeval now{};
+    gettimeofday(&now,nullptr);
+    if(now.tv_sec-self->m_last_active_time.tv_sec>max_inactive_time){
+        self->handle_close();
+    }
+    else{
+        self->m_timer.add_timer(chrono::seconds(max_inactive_time),[self](){
+           self->check_inactive(self);
+        });
+    }
+}
+
+
+connection::connection(const sockaddr_in &client_ip, int sock_fd, int epoll_fd,application& app,TriggerMode mode,
+                       timer& timer)
 :   m_client_ip(client_ip),
     m_sock_fd(sock_fd),
     m_epoll_fd(epoll_fd),
     m_client_address(inet_ntoa(client_ip.sin_addr)),
     m_client_port(ntohs(client_ip.sin_port)),
     m_app(app),
-    m_mode(mode){
+    m_mode(mode),
+    m_timer(timer){
 
     INFO("create a new connection from %s:%d at fd=%d",m_client_address.c_str(),m_client_port,m_sock_fd);
 
     make_nonblocking(m_sock_fd);
-    int event = EPOLLIN|EPOLLONESHOT|EPOLLHUP;
+    unsigned int event = EPOLLIN|EPOLLONESHOT|EPOLLHUP;
     if(m_mode==TriggerMode::ET){
         event |= EPOLLET;
     }
     add_to_epoll(m_sock_fd,m_epoll_fd,event);
+
+    gettimeofday(&m_last_active_time,nullptr);
+
+}
+
+void connection::init(){
+    TRACE("connection %s:%d at fd=%d doing init",m_client_address.c_str(),m_client_port,m_sock_fd)
+    auto self = shared_from_this();
+    m_timer.add_timer(chrono::seconds(3),[self](){
+       self->check_inactive(self);
+    });
 }
 
 void connection::handle_read() {
+    gettimeofday(&m_last_active_time,nullptr);
     TRACE("connection %s:%d at fd=%d handle_read",m_client_address.c_str(),m_client_port,m_sock_fd);
     static const size_t BUF_SIZE = 1024;
     char buffer[BUF_SIZE];
     while(true){
-        int ret = recv(m_sock_fd,buffer,BUF_SIZE,0);
+        long ret = recv(m_sock_fd,buffer,BUF_SIZE,0);
         if(ret>0){
             m_parser.parse(buffer,ret);
         }
         else if(ret==0){
-            ERROR("connection %s:%d fd=%d recv 0, client close connection",m_client_address.c_str(),m_client_port,\
+            ERROR("connection %s:%d fd=%d recv 0, client close connection",m_client_address.c_str(),m_client_port,
             m_sock_fd);
             handle_close();
             //close connection
@@ -59,7 +99,7 @@ void connection::handle_read() {
             }
         }
     }
-    int event = EPOLLIN|EPOLLHUP|EPOLLONESHOT;
+    unsigned int event = EPOLLIN|EPOLLHUP|EPOLLONESHOT;
     if(m_mode==TriggerMode::ET){
         event |= EPOLLET;
     }
@@ -78,12 +118,13 @@ void connection::handle_read() {
 
 bool connection::send_response(const response& resp){
     string s = resp.to_string();
-    int ret = send(m_sock_fd,s.c_str(),s.size(),0);
+    long ret = send(m_sock_fd,s.c_str(),s.size(),0);
     TRACE("connection %s:%d fd=%d send resp:\r\n%s",m_client_address.c_str(),m_client_port,m_sock_fd,s.c_str());
     return ret==s.size();
 }
 
 void connection::handle_write() {
+    gettimeofday(&m_last_active_time,nullptr);
     TRACE("connection %s:%d at fd=%d handle_write",m_client_address.c_str(),m_client_port,m_sock_fd);
     while(!m_response_queue.empty()){
         const response& resp = m_response_queue.front();
@@ -106,6 +147,4 @@ void connection::handle_close(){
     TRACE("connection %s:%d at fd=%d handle_close",m_client_address.c_str(),m_client_port,m_sock_fd);
     del_from_epoll(m_sock_fd,m_epoll_fd);
     close(m_sock_fd);
-    //m_container.erase(m_sock_fd);//析构掉自己
-    //swap(m_parser,parser());//清空parser，减少内存占用
 }

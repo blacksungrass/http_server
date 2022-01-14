@@ -5,6 +5,7 @@
 #include "thread_pool.h"
 #include <exception>
 #include <iostream>
+#include <logger.h>
 
 using namespace std;
 
@@ -46,9 +47,10 @@ void thread_pool::run() {
             f();
         }
         catch (...){
-            //todo write log
+            ERROR("thread %lld of thread pool got exception",this_thread::get_id());
         }
     }
+    TRACE("thread %lld of thread pool exited",this_thread::get_id());
 }
 
 bool thread_pool::add_task(function<void()> &&f) {

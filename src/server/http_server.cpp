@@ -25,7 +25,10 @@ http_server::http_server(const string& listen_address, u_short listen_port, cons
     m_root_dir(root_dir),
     m_epoll_fd(-1),
     m_listen_fd(-1),
-    m_thread_pool(thread_cnt){
+    m_thread_pool(thread_cnt),
+    m_listen_ip{},
+    m_timer(m_thread_pool),
+    m_connections(1024){
 
     int ret = inet_aton(m_listen_address.c_str(),&m_listen_ip.sin_addr);
     if(ret==0)
@@ -65,7 +68,7 @@ bool http_server::start(application& app) {
     m_epoll_fd = epoll_create(5);
     if(m_epoll_fd<0)
         return false;
-    int tmp_event_flag = EPOLLIN;
+    unsigned int tmp_event_flag = EPOLLIN;
     if(m_listen_mode==TriggerMode::ET){
         tmp_event_flag |= EPOLLET;
     }
@@ -73,12 +76,12 @@ bool http_server::start(application& app) {
         return false;
     }
     epoll_event event_vector[http_server::MAX_EPOLL_EVENTS_CNT];
-    bool exit = false;
-    auto old_handler = signal(SIGINT,handle_signal);
 
+    auto old_handler = signal(SIGINT,handle_signal);
+    long t = -1;
     while(!exit_server){
-        TRACE("%s","start epoll_wait");
-        int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,100);
+        TRACE("start epoll_wait with timeout=%ld",t);
+        int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,t);
         TRACE("epoll_wait got %d events",num);
         for(int i=0;i<num;++i){
             epoll_event ev = event_vector[i];
@@ -103,13 +106,10 @@ bool http_server::start(application& app) {
                     }
                     make_nonblocking(client_fd);
 
-                    auto it = m_connections.find(client_fd);
-                    if(it!=m_connections.end()){
-                        INFO("erase a old connection at client_fd=%d",client_fd);
-                        m_connections.erase(it);
-                    }
-                    m_connections.emplace(piecewise_construct,forward_as_tuple(client_fd),\
-                    forward_as_tuple(client_ip,client_fd,m_epoll_fd,app,m_conn_mode));
+                    auto p = make_shared<connection>(client_ip,client_fd,m_epoll_fd,app,m_conn_mode,m_timer);
+                    p->init();
+                    m_connections[client_fd] = p;
+
                 }
                 if(error_flag){
                     break;
@@ -117,27 +117,33 @@ bool http_server::start(application& app) {
             }
             else{
                 int fd = ev.data.fd;
-                auto it = m_connections.find(fd);
-                if(it==m_connections.end()){
+
+                auto conn = m_connections[fd];
+                if(!conn)
                     continue;
-                }
-                connection& conn = it->second;
                 if(ev.events&EPOLLIN){
-                    m_thread_pool.add_task([&conn](){
-                        conn.handle_read();
+                    TRACE("got EPOLLIN at fd=%d",fd);
+                    m_thread_pool.add_task([conn](){
+                        conn->handle_read();
                     });
                 }
                 if(ev.events&EPOLLOUT){
-                    m_thread_pool.add_task([&conn](){
-                        conn.handle_write();
+                    TRACE("got EPOLLOUT at fd=%d",fd);
+                    m_thread_pool.add_task([conn](){
+                        conn->handle_write();
                     });
                 }
                 if(ev.events&EPOLLHUP){
-                    m_thread_pool.add_task([&conn](){
-                        conn.handle_close();
+                    TRACE("got EPOLLHUP at fd=%d",fd);
+                    m_thread_pool.add_task([conn](){
+                        conn->handle_close();
                     });
                 }
             }
+        }
+        t = chrono::duration_cast<chrono::milliseconds>(m_timer.tick()).count();
+        if(t==0){
+            t = -1;
         }
 
     }

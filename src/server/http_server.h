@@ -16,6 +16,8 @@
 #include "../log/logger.h"
 #include "application.h"
 #include "connection.h"
+#include "../timer/timer.h"
+#include <memory>
 
 class connection;
 
@@ -35,7 +37,8 @@ private:
     TriggerMode m_listen_mode;//监听的模式（LT或ET）
     TriggerMode m_conn_mode;//客户端连接的模式(LT或ET)
     thread_pool m_thread_pool;//线程池
-    std::map<int,connection> m_connections;
+    std::vector<std::shared_ptr<connection>> m_connections;
+    timer m_timer;
 public:
     http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir);
     http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir,unsigned int thread_cnt);
