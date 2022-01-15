@@ -38,7 +38,7 @@ void connection::check_inactive(shared_ptr<connection> self){
 
 
 connection::connection(const sockaddr_in &client_ip, int sock_fd, int epoll_fd,application& app,TriggerMode mode,
-                       timer& timer)
+                       list_timer& timer)
 :   m_client_ip(client_ip),
     m_sock_fd(sock_fd),
     m_epoll_fd(epoll_fd),

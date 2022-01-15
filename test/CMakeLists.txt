@@ -68,7 +68,10 @@ add_executable(
         test_timer
         timer/test_timer.cpp
         ../src/thread_pool/thread_pool.cpp
-        ../src/timer/timer.cpp
+        ../src/timer/list_timer.cpp
+        ../src/timer/heap_timer.cpp
+        ../src/timer/timer_util.cpp
+        ../src/log/logger.cpp
 )
 target_link_libraries(
         test_timer

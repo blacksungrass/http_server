@@ -2,7 +2,7 @@
 // Created by blacksungrass on 2022/1/6.
 //
 
-#include "timer.h"
+#include "list_timer.h"
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -20,38 +20,27 @@ public:
 
 
 
-static bool operator<(const timeval& a,const timeval& b){
-    if(a.tv_sec==b.tv_sec){
-        return a.tv_usec<b.tv_usec;
-    }
-    return a.tv_sec<b.tv_sec;
-}
-static bool operator>(const timeval& a,const timeval& b){
-    if(a.tv_sec==b.tv_sec&&a.tv_usec==b.tv_usec)
-        return false;
-    else
-        return !(a<b);
-}
 
 
-timer::timer(thread_pool& pool)
+
+list_timer::list_timer(thread_pool& pool)
 :m_thread_pool(pool),
  m_head(nullptr),
  m_id(0){
 
 }
 
-int64_t timer::add_timer(const std::chrono::seconds &d, std::function<void()> &&func) {
+int64_t list_timer::add_timer(const std::chrono::seconds &d, std::function<void()> &&func) {
     chrono::microseconds time = chrono::duration_cast<chrono::seconds>(d);
     return add_timer(time,move(func));
 }
 
-int64_t timer::add_timer(const chrono::milliseconds &d, std::function<void()> &&func) {
+int64_t list_timer::add_timer(const chrono::milliseconds &d, std::function<void()> &&func) {
     chrono::microseconds time = chrono::duration_cast<chrono::microseconds>(d);
     return add_timer(time,move(func));
 }
 
-int64_t timer::add_timer(const chrono::microseconds & d,std::function<void()>&& func) {
+int64_t list_timer::add_timer(const chrono::microseconds & d,std::function<void()>&& func) {
     timeval now{};
     gettimeofday(&now,nullptr);
     now.tv_usec += d.count();
@@ -102,7 +91,7 @@ int64_t timer::add_timer(const chrono::microseconds & d,std::function<void()>&& 
     }
 }
 
-chrono::microseconds timer::tick() {
+chrono::microseconds list_timer::tick() {
     timeval now{};
     long int d = 0;
     gettimeofday(&now,nullptr);
@@ -128,7 +117,7 @@ chrono::microseconds timer::tick() {
     }
 }
 
-bool timer::del_timer(int64_t id){
+bool list_timer::del_timer(int64_t id){
     {
         lock_guard lock(m_mutex);
         auto it = m_record.find(id);

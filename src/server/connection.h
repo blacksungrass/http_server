@@ -6,7 +6,7 @@
 #define TEST_CONNECTION_H
 
 #include "../parser/parser.h"
-#include "../timer/timer.h"
+#include "../timer/list_timer.h"
 #include "http_server.h"
 
 #include <string>
@@ -29,11 +29,11 @@ private:
     timeval m_last_active_time;
     std::queue<response> m_response_queue;
     bool send_response(const response& response);
-    timer& m_timer;
+    list_timer& m_timer;
 
     void check_inactive(std::shared_ptr<connection> self);
 public:
-    connection(const sockaddr_in& client_ip,int sock_fd,int epoll_fd, application& app,TriggerMode mode,timer& timer);
+    connection(const sockaddr_in& client_ip,int sock_fd,int epoll_fd, application& app,TriggerMode mode,list_timer& timer);
     void init();
     void handle_read();
     void handle_write();

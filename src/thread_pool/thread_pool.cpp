@@ -5,7 +5,7 @@
 #include "thread_pool.h"
 #include <exception>
 #include <iostream>
-#include <logger.h>
+#include "../log/logger.h"
 
 using namespace std;
 
@@ -23,7 +23,6 @@ thread_pool::thread_pool(unsigned int num_workers)
     }
     for(int i=0;i<m_num_workers;++i){
         m_workers.emplace_back(&thread_pool::run,this);
-        //m_workers[i].detach();
     }
 }
 
