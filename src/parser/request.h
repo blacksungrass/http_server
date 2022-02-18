@@ -18,16 +18,18 @@ private:
     };
 private:
     parse_state m_parse_state;
+    std::size_t m_data_len;
+    bool m_failure,m_finished;
+
+    std::size_t parse_first_line(const char* data,int len);
+    std::size_t parse_headers(const char* data,int len);
+    std::size_t parse_content(const char* data,int len);
+public:
     http_method m_method;
     std::string m_url;
     std::string m_version;
     std::map<std::string,std::string> m_headers;
-    std::size_t m_data_len;
-    bool m_failure,m_finished;
     std::string m_data;
-    std::size_t parse_first_line(const char* data,int len);
-    std::size_t parse_headers(const char* data,int len);
-    std::size_t parse_content(const char* data,int len);
 public:
     request();
     request(request&& o) noexcept ;

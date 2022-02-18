@@ -14,7 +14,7 @@
 
 #include "../thread_pool/thread_pool.h"
 #include "../log/logger.h"
-#include "application.h"
+#include "../app/application.h"
 #include "connection.h"
 #include "../timer/list_timer.h"
 #include <memory>
@@ -31,7 +31,6 @@ private:
     std::string m_listen_address;//监听的ip地址（字符串格式）
     sockaddr_in m_listen_ip;//监听的地址（包括ip和端口)
     u_short m_listen_port;//听的端口
-    std::string m_root_dir;//web根目录
     int m_epoll_fd;//epoll文件描述符
     int m_listen_fd;//监听socket文件描述符
     TriggerMode m_listen_mode;//监听的模式（LT或ET）
@@ -40,8 +39,8 @@ private:
     std::vector<std::shared_ptr<connection>> m_connections;
     list_timer m_timer;
 public:
-    http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir);
-    http_server(const std::string& listen_address,u_short listen_port,const std::string& root_dir,unsigned int thread_cnt);
+    http_server(const std::string& listen_address,u_short listen_port);
+    http_server(const std::string& listen_address,u_short listen_port,unsigned int thread_cnt);
 
     bool start(application& app);
 };

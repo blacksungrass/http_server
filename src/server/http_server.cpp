@@ -14,15 +14,14 @@
 #include "../util/util.h"
 using namespace std;
 
-http_server::http_server(const string& listen_address, u_short listen_port, const std::string& root_dir)
-:   http_server(listen_address,listen_port,root_dir,thread::hardware_concurrency()){
+http_server::http_server(const string& listen_address, u_short listen_port)
+:   http_server(listen_address,listen_port,thread::hardware_concurrency()){
 
 }
 
-http_server::http_server(const string& listen_address, u_short listen_port, const string& root_dir, unsigned int thread_cnt)
+http_server::http_server(const string& listen_address, u_short listen_port, unsigned int thread_cnt)
 :   m_listen_address(listen_address),
     m_listen_port(listen_port),
-    m_root_dir(root_dir),
     m_epoll_fd(-1),
     m_listen_fd(-1),
     m_thread_pool(thread_cnt),
@@ -80,7 +79,7 @@ bool http_server::start(application& app) {
     auto old_handler = signal(SIGINT,handle_signal);
     long t = -1;
     while(!exit_server){
-        TRACE("start epoll_wait with timeout=%ld",t);
+        TRACE("start epoll_wait with timeout=%ldms",t);
         int num = epoll_wait(m_epoll_fd,event_vector,http_server::MAX_EPOLL_EVENTS_CNT,t);
         TRACE("epoll_wait got %d events",num);
         for(int i=0;i<num;++i){
@@ -117,7 +116,6 @@ bool http_server::start(application& app) {
             }
             else{
                 int fd = ev.data.fd;
-
                 auto conn = m_connections[fd];
                 if(!conn)
                     continue;

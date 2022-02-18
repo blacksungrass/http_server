@@ -27,8 +27,7 @@ private:
     application& m_app;
     TriggerMode m_mode;
     timeval m_last_active_time;
-    std::queue<response> m_response_queue;
-    bool send_response(const response& response);
+    std::queue<response*> m_response_queue;
     list_timer& m_timer;
 
     void check_inactive(std::shared_ptr<connection> self);
@@ -38,6 +37,7 @@ public:
     void handle_read();
     void handle_write();
     void handle_close();
+    ~connection();
 };
 
 

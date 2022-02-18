@@ -9,12 +9,15 @@
 
 class file_response : public response{
 private:
-    std::string m_file_path;
-    std::size_t m_file_length;
+    std::string m_file_name;
+    std::size_t m_file_length = 0;
+    void* m_file_address = nullptr;
 public:
     file_response();
-    void set_file(const std::string& file_path);
-    std::string to_string() const override;
+    file_response(const file_response&);
+    void set_content(const std::string& s) override;
+    void pack() override;
+    ~file_response();
 };
 
 

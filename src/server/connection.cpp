@@ -116,30 +116,34 @@ void connection::handle_read() {
     modified_epoll(m_sock_fd,m_epoll_fd,event);
 }
 
-bool connection::send_response(const response& resp){
-    string s = resp.to_string();
-    long ret = send(m_sock_fd,s.c_str(),s.size(),0);
-    TRACE("connection %s:%d fd=%d send resp:\r\n%s",m_client_address.c_str(),m_client_port,m_sock_fd,s.c_str());
-    return ret==s.size();
-}
+
 
 void connection::handle_write() {
     gettimeofday(&m_last_active_time,nullptr);
     TRACE("connection %s:%d at fd=%d handle_write",m_client_address.c_str(),m_client_port,m_sock_fd);
+    bool need_write_later = false;
     while(!m_response_queue.empty()){
-        const response& resp = m_response_queue.front();
-        bool ret = send_response(resp);
-        if(!ret||resp.close_connection()){
-            //log error and close connection
+        response* resp = m_response_queue.front();
+        int ret = resp->send(m_sock_fd);
+        if(ret==-1){
             handle_close();
             return;
         }
-        m_response_queue.pop();
+        else if(ret==1){
+            need_write_later = true;
+            break;
+        }
+        else{
+            delete resp;
+            m_response_queue.pop();
+        }
     }
     uint32_t event = EPOLLIN|EPOLLHUP|EPOLLONESHOT;
     if(m_mode==TriggerMode::ET){
         event |= EPOLLET;
     }
+    if(need_write_later)
+        event |= EPOLLOUT;
     modified_epoll(m_sock_fd,m_epoll_fd,event);
 }
 
@@ -147,4 +151,11 @@ void connection::handle_close(){
     TRACE("connection %s:%d at fd=%d handle_close",m_client_address.c_str(),m_client_port,m_sock_fd);
     del_from_epoll(m_sock_fd,m_epoll_fd);
     close(m_sock_fd);
+}
+
+connection::~connection() {
+    while(!m_response_queue.empty()){
+        delete m_response_queue.front();
+        m_response_queue.pop();
+    }
 }
