@@ -9,8 +9,8 @@
 
 
 class helloworld_application:public application {
-public:
-    response* handle_request(const request& req) override;
+private:
+    response* m_handle_request(const request& req) override;
 };
 
 

@@ -8,7 +8,7 @@
 
 using namespace std;
 
-response* helloworld_application::handle_request(const request& req){
+response* helloworld_application::m_handle_request(const request& req){
     auto *ret = new file_response();
     auto& resp = *ret;
     resp.set_version("HTTP/1.1");

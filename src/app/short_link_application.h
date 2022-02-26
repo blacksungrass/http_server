@@ -14,8 +14,9 @@
 class short_link_application:public application {
 public:
     explicit short_link_application(const std::string&);
-    response* handle_request(const request& req) override;
+
 private:
+    response* m_handle_request(const request& req) override;
     std::map<std::string,std::string> m_map;
     std::atomic<int> m_cur_id;
     std::mutex m_mutex;

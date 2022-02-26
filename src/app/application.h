@@ -12,8 +12,11 @@
  * application是一个接口，只需要继承application并实现handle_request函数即可
  */
 class application {
+private:
+    virtual response* m_handle_request(const request& req);
 public:
-    virtual response* handle_request(const request& req) = 0;
+    response* handle_request(const request& req);
+
 };
 
 

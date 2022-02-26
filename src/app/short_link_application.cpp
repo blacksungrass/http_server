@@ -119,7 +119,7 @@ response* short_link_application::get_key_from_link(const request& req){
 
 
 
-response* short_link_application::handle_request(const request& req){
+response* short_link_application::m_handle_request(const request& req){
     if(req.m_method==http_method::GET){
         if(req.m_url.size()>1)
             return get_link_from_key(req);

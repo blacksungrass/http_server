@@ -139,3 +139,11 @@ response::response(const response &other) {
         m_vec[1].iov_len = m_content.size();
     }
 }
+
+bool response::is_keep_alive() const {
+    return m_keep_alive;
+}
+
+void response::set_keep_alive(bool b) {
+    m_keep_alive = b;
+}

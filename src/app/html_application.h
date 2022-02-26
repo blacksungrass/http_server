@@ -10,8 +10,8 @@
 class html_application:public application {
 public:
     explicit html_application(const std::string&);
-    response* handle_request(const request& req) override;
 private:
+    response* m_handle_request(const request& req) override;
     std::string m_root_dir;
 };
 

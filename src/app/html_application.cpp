@@ -26,7 +26,7 @@ response* get_404_response(){
     return ret;
 }
 
-response* html_application::handle_request(const request& req){
+response* html_application::m_handle_request(const request& req){
     string filename = req.m_url;
     int pos = filename.find('/');
     if(pos==string::npos||pos== filename.size()-1)

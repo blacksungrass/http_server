@@ -19,6 +19,7 @@ protected:
     bool m_packed = false;
     std::string m_header_content;
     struct iovec* m_vec = nullptr;
+    bool m_keep_alive = true;
 public:
     response() = default;
     response(const response&);
@@ -26,6 +27,8 @@ public:
     void set_status_code(int status_code);
     void set_status_string(const std::string& s);
     void add_header(const std::string& key,const std::string& value);
+    bool is_keep_alive() const;
+    void set_keep_alive(bool);
     virtual void set_content(const std::string& s);
     virtual void pack();
     /*
